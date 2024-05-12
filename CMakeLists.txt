@@ -4,7 +4,7 @@ project(hue-dynamics)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)  # Important
 
 include_directories(include)
-add_executable(hue-dynamics src/main.cpp src/Particle.cpp src/Util.cpp src/Config.cpp)
+add_executable(hue-dynamics src/main.cpp src/Particle.cpp src/Dynamics.cpp src/Util.cpp src/Config.cpp)
 
 target_link_libraries(hue-dynamics sfml-graphics sfml-window sfml-system)
 

@@ -58,6 +58,14 @@ void Particle::setGridKey() {
     }
 }
 
+void Particle::updateVel(float fx, float fy, float dt) {
+    vx -= fx*dt;
+    vy -= fy*dt;
+
+    vx *= std::pow(Config::damping, dt);
+    vy *= std::pow(Config::damping, dt);
+}
+
 void Particle::update(float dt) {
     x += vx*dt;
     y += vy*dt;
@@ -65,15 +73,18 @@ void Particle::update(float dt) {
     else if (x<0.f) x += Config::wWidth;
     if (y>Config::wHeight) y -= Config::wHeight;
     else if (y<0.f) y += Config::wHeight;
+    setGridKey();
 
     circle.setPosition(x-Config::radius, y-Config::radius);
 }
 
 void Particle::print() {
     std::cout << id << "\n";
-    std::cout << x << y << "\n";
-    std::cout << vx << vy << "\n";
+    std::cout << x << " " << y << "\n";
+    std::cout << vx << " " << vy << "\n";
     std::cout << hue << "\n";
+    std::cout << grid_key << "\n";
+   
 }
 
 void Particle::render(sf::RenderWindow& window) {

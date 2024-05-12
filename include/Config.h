@@ -9,12 +9,13 @@ public:
     static const float saturation;
     static const int nHue;
     static const int alpha;
-    static const float vMax;
     static const float rMin;
     static const float rMax;
+    static const float vMax;
+    static const float fMul;
+    static const float damping;
     static const int n;
 
-    // Disallow creating an instance of Config
     Config() = delete;
 };
 

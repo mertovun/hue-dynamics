@@ -5,6 +5,34 @@
 #include <cmath>
 #include "Particle.h"
 #include "Config.h"
+#include "Dynamics.h"
+#include "Util.h"
+
+void updatePhysics(std::vector<Particle*>& particles, float dt) {
+    const int numCells = Particle::nGrid * Particle::nGrid;
+    for (size_t i = 0; i<numCells; ++i) {
+        for (int nx = -1; nx<=1; nx++) {
+            for (int ny = -1; ny <= 1; ny++) {
+                int j = (i+numCells+nx+ny*Particle::nGrid) % numCells;
+
+                for (auto& id_A : Particle::GridMap[i] ) {
+                    for (auto& id_B : Particle::GridMap[j]) {
+                        if (id_A < id_B) {
+                            float dx = particles[id_B]->getX()-particles[id_A]->getX();
+                            float dy = particles[id_B]->getY()-particles[id_A]->getY();
+
+                            auto f_A = Dynamics::calculateForce(particles[id_A]->getHue(), particles[id_B]->getHue(),dx,dy);
+                            auto f_B = Dynamics::calculateForce(particles[id_B]->getHue(), particles[id_A]->getHue(),-dx,-dy);
+
+                            particles[id_A]->updateVel(f_A[0],f_A[1],dt);
+                            particles[id_B]->updateVel(f_B[0],f_B[1],dt);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 void updateScene(std::vector<Particle*>& particles, float dt) {
     for (Particle * particle : particles) {
@@ -18,19 +46,34 @@ void renderScene(sf::RenderWindow& window, const std::vector<Particle*>& particl
     }
 }
 
+void setDynamics() {
+
+    Dynamics::setAll(0.f);
+    
+    for (size_t i = 0; i<Config::nHue;i++) {
+        Dynamics::set(i,i,-randomFloat(0.f,.3f)-.7f);
+        for (size_t j = 1; j<=i; j++) {
+            float v = randomFloat(-.5,.5);
+            Dynamics::set(i,i-j,v+randomFloat(-.1f,.1f));
+            Dynamics::set(i-j,i,-v+randomFloat(-.1f,.1f));
+        }
+    }
+    Dynamics::PrintForceMatrix();
+}
+
 int  main() { 
     sf::Clock clock;
     float time = clock.getElapsedTime().asSeconds();
 
     sf::Font font;
-    sf::Text text;
-    text.setFont(font);
+    sf::Text text("",font,12);
 
     if (!font.loadFromFile("fonts/tech.ttf")) {
         std::cerr << "Font not found";
         exit(-1);
     }
 
+    setDynamics();
     // Particle::PrintGridDistribution();
 
     sf::RenderWindow window(
@@ -38,7 +81,6 @@ int  main() {
                 "SFML Works!", 
                 sf::Style::Close, 
                 sf::ContextSettings(24,8,4));
-
 
     while (window.isOpen()) {
         sf::Event event;
@@ -50,8 +92,10 @@ int  main() {
         float newTime = clock.getElapsedTime().asSeconds();
         float dt = newTime - time;
         time = newTime;
-        // Particle::ParticleVec[100]->print();
+
+        updatePhysics(Particle::ParticleVec, dt);
         updateScene(Particle::ParticleVec, dt);
+        // Particle::ParticleVec[100]->print();
         renderScene(window, Particle::ParticleVec);
         float fps = 1.f / dt; 
         std::ostringstream out;
