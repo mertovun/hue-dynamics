@@ -5,7 +5,6 @@
 #include <cmath>
 #include "Particle.h"
 #include "Config.h"
-#include "Util.h"
 
 void updateScene(std::vector<Particle*>& particles, float dt) {
     for (Particle * particle : particles) {
@@ -32,8 +31,7 @@ int  main() {
         exit(-1);
     }
 
-    int numCells = static_cast<int>(ceil(Config::wWidth/Config::rMax));
-    float gridSize = static_cast<float>(Config::wWidth)/ numCells;
+    // Particle::PrintGridDistribution();
 
     sf::RenderWindow window(
                 sf::VideoMode(Config::wWidth,Config::wHeight), 
@@ -52,7 +50,6 @@ int  main() {
         float newTime = clock.getElapsedTime().asSeconds();
         float dt = newTime - time;
         time = newTime;
-        // std::cout << Particle::ParticleVec.size() << "\n";
         // Particle::ParticleVec[100]->print();
         updateScene(Particle::ParticleVec, dt);
         renderScene(window, Particle::ParticleVec);

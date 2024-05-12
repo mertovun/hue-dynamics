@@ -1,7 +1,7 @@
 #include "Config.h"
 
-const int Config::wWidth = 800;
-const int Config::wHeight = 800;
+const float Config::wWidth = 800.f;
+const float Config::wHeight = 800.f;
 const float Config::radius = .6f;
 const float Config::lightness = 0.5f;
 const float Config::saturation = 0.9f;

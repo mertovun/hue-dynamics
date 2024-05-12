@@ -2,8 +2,8 @@
 
 class Config {
 public:
-    static const int wWidth;
-    static const int wHeight;
+    static const float wWidth;
+    static const float wHeight;
     static const float radius;
     static const float lightness;
     static const float saturation;
