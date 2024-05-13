@@ -3,47 +3,71 @@
 #include <sstream>
 #include <iostream>
 #include <cmath>
+#include <thread>
 #include "Particle.h"
 #include "Config.h"
 #include "Dynamics.h"
 #include "Util.h"
 
-void updatePhysics(std::vector<Particle*>& particles, float dt) {
-    const int numCells = Particle::nGrid * Particle::nGrid;
-    for (size_t i = 0; i<numCells; ++i) {
-        for (int nx = -1; nx<=1; nx++) {
-            for (int ny = -1; ny <= 1; ny++) {
-                int j = (i+numCells+nx+ny*Particle::nGrid) % numCells;
+void updateCell(std::vector<Particle*>& particles, float dt, int i, int numCells) {
+    for (int nx = -1; nx<=1; nx++) {
+        for (int ny = -1; ny <= 1; ny++) {
+            int j = (i+numCells+nx+ny*Particle::nGrid) % numCells;
 
-                for (auto& id_A : Particle::GridMap[i] ) {
-                    for (auto& id_B : Particle::GridMap[j]) {
-                        if (id_A < id_B) {
-                            float dx = particles[id_B]->getX()-particles[id_A]->getX();
-                            float dy = particles[id_B]->getY()-particles[id_A]->getY();
+            for (auto& id_A : Particle::GridMap[i] ) {
+                for (auto& id_B : Particle::GridMap[j]) {
+                    if (id_A < id_B) {
+                        float dx = particles[id_B]->getX()-particles[id_A]->getX();
+                        float dy = particles[id_B]->getY()-particles[id_A]->getY();
 
-                            if (dx<-Config::rMax) dx += Config::wHeight;
-                            else if (dx>Config::rMax ) dx -= Config::wHeight;
-                            if (dy<-Config::rMax) dy += Config::wHeight;
-                            else if (dy>Config::rMax ) dy -= Config::wHeight;
+                        if (dx<-Config::rMax) dx += Config::wHeight;
+                        else if (dx>Config::rMax ) dx -= Config::wHeight;
+                        if (dy<-Config::rMax) dy += Config::wHeight;
+                        else if (dy>Config::rMax ) dy -= Config::wHeight;
 
-                            int hue_A = particles[id_A]->getHue();
-                            int hue_B = particles[id_B]->getHue();
-                            std::array<float, 2> f_A = Dynamics::calculateForce(hue_A, hue_B,dx,dy);
-                            particles[id_A]->updateVel(f_A[0],f_A[1],dt);
-                            std::array<float, 2> f_B;
-                            if (hue_A == hue_B) {
-                                particles[id_B]->updateVel(-f_A[0],-f_A[1],dt);
-                            }
-                            else {
-                                f_B =  Dynamics::calculateForce(hue_B, hue_A,-dx,-dy);
-                                particles[id_B]->updateVel(f_B[0],f_B[1],dt);
-                            }
+                        int hue_A = particles[id_A]->getHue();
+                        int hue_B = particles[id_B]->getHue();
+                        std::array<float, 2> f_A = Dynamics::calculateForce(hue_A, hue_B,dx,dy);
+                        particles[id_A]->updateVel(f_A[0],f_A[1],dt);
+                        std::array<float, 2> f_B;
+                        if (hue_A == hue_B) {
+                            particles[id_B]->updateVel(-f_A[0],-f_A[1],dt);
+                        }
+                        else {
+                            f_B =  Dynamics::calculateForce(hue_B, hue_A,-dx,-dy);
+                            particles[id_B]->updateVel(f_B[0],f_B[1],dt);
                         }
                     }
                 }
             }
         }
     }
+}
+
+void updatePhysics(std::vector<Particle*>& particles, float dt) {
+    const int numCells = Particle::nGrid * Particle::nGrid;
+    int numThreads = std::thread::hardware_concurrency();
+
+    std::vector<std::thread> threads;
+    int cellsPerThread = numCells / numThreads;
+
+    auto processCells = [&](int start, int end) {
+        for (size_t i = 0; i<numCells; ++i) {
+            updateCell(particles, dt, i, numCells);
+        }
+    };
+
+    for (size_t i = 0; i < numThreads; ++i) {
+        int start = i * cellsPerThread;
+        int end = (i == numThreads - 1) ? numCells : (start + cellsPerThread);
+
+        threads.emplace_back(processCells, start, end);
+    }
+
+    for (auto& thread:threads) {
+        thread.join();
+    }
+
 }
 
 void updateScene(std::vector<Particle*>& particles, float dt) {
