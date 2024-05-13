@@ -7,6 +7,7 @@
 #include "Particle.h"
 #include "Config.h"
 #include "Dynamics.h"
+#include "ThreadPool.h"
 #include "Util.h"
 
 void updateCell(std::vector<Particle*>& particles, float dt, int i, int numCells) {
@@ -46,29 +47,41 @@ void updateCell(std::vector<Particle*>& particles, float dt, int i, int numCells
 
 void updatePhysics(std::vector<Particle*>& particles, float dt) {
     const int numCells = Particle::nGrid * Particle::nGrid;
-    int numThreads = std::thread::hardware_concurrency();
+    
+    ThreadPool pool(std::thread::hardware_concurrency());
 
-    std::vector<std::thread> threads;
-    int cellsPerThread = numCells / numThreads;
-
-    auto processCells = [&](int start, int end) {
-        for (size_t i = 0; i<numCells; ++i) {
+    for (int i = 0; i < numCells; ++i) {
+        pool.enqueue([&, i]() {
             updateCell(particles, dt, i, numCells);
-        }
-    };
-
-    for (size_t i = 0; i < numThreads; ++i) {
-        int start = i * cellsPerThread;
-        int end = (i == numThreads - 1) ? numCells : (start + cellsPerThread);
-
-        threads.emplace_back(processCells, start, end);
+        });
     }
-
-    for (auto& thread:threads) {
-        thread.join();
-    }
-
 }
+
+// void updatePhysics(std::vector<Particle*>& particles, float dt) {
+//     const int numCells = Particle::nGrid * Particle::nGrid;
+//     int numThreads = std::thread::hardware_concurrency();
+//
+//     std::vector<std::thread> threads;
+//     int cellsPerThread = numCells / numThreads;
+//
+//     auto processCells = [&](int start, int end) {
+//         for (size_t i = 0; i<numCells; ++i) {
+//             updateCell(particles, dt, i, numCells);
+//         }
+//     };
+//
+//     for (size_t i = 0; i < numThreads; ++i) {
+//         int start = i * cellsPerThread;
+//         int end = (i == numThreads - 1) ? numCells : (start + cellsPerThread);
+//
+//         threads.emplace_back(processCells, start, end);
+//     }
+//
+//     for (auto& thread:threads) {
+//         thread.join();
+//     }
+//
+// }
 
 void updateScene(std::vector<Particle*>& particles, float dt) {
     for (Particle * particle : particles) {
@@ -114,7 +127,7 @@ int  main() {
 
     sf::RenderWindow window(
                 sf::VideoMode(Config::wWidth,Config::wHeight), 
-                "SFML Works!", 
+                "hue dynamics <3", 
                 sf::Style::Close, 
                 sf::ContextSettings(24,8,4));
 
