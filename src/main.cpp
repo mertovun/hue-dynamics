@@ -21,11 +21,23 @@ void updatePhysics(std::vector<Particle*>& particles, float dt) {
                             float dx = particles[id_B]->getX()-particles[id_A]->getX();
                             float dy = particles[id_B]->getY()-particles[id_A]->getY();
 
-                            auto f_A = Dynamics::calculateForce(particles[id_A]->getHue(), particles[id_B]->getHue(),dx,dy);
-                            auto f_B = Dynamics::calculateForce(particles[id_B]->getHue(), particles[id_A]->getHue(),-dx,-dy);
+                            if (dx<-Config::rMax) dx += Config::wHeight;
+                            else if (dx>Config::rMax ) dx -= Config::wHeight;
+                            if (dy<-Config::rMax) dy += Config::wHeight;
+                            else if (dy>Config::rMax ) dy -= Config::wHeight;
 
+                            int hue_A = particles[id_A]->getHue();
+                            int hue_B = particles[id_B]->getHue();
+                            std::array<float, 2> f_A = Dynamics::calculateForce(hue_A, hue_B,dx,dy);
                             particles[id_A]->updateVel(f_A[0],f_A[1],dt);
-                            particles[id_B]->updateVel(f_B[0],f_B[1],dt);
+                            std::array<float, 2> f_B;
+                            if (hue_A == hue_B) {
+                                particles[id_B]->updateVel(-f_A[0],-f_A[1],dt);
+                            }
+                            else {
+                                f_B =  Dynamics::calculateForce(hue_B, hue_A,-dx,-dy);
+                                particles[id_B]->updateVel(f_B[0],f_B[1],dt);
+                            }
                         }
                     }
                 }
@@ -51,11 +63,11 @@ void setDynamics() {
     Dynamics::setAll(0.f);
     
     for (size_t i = 0; i<Config::nHue;i++) {
-        Dynamics::set(i,i,-randomFloat(0.f,.3f)-.7f);
+        Dynamics::set(i,i,-randomFloat(0.f,.6f)-.4f);
         for (size_t j = 1; j<=i; j++) {
             float v = randomFloat(-.5,.5);
-            Dynamics::set(i,i-j,v+randomFloat(-.1f,.1f));
-            Dynamics::set(i-j,i,-v+randomFloat(-.1f,.1f));
+            Dynamics::set(i,i-j,v+randomFloat(-.3f,.3f));
+            Dynamics::set(i-j,i,-v+randomFloat(-.3f,.3f));
         }
     }
     Dynamics::PrintForceMatrix();

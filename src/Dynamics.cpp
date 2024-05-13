@@ -77,19 +77,19 @@ void Dynamics::PrintForceMatrix() {
 
 std::array<float, 2> Dynamics::calculateForce(int hueA, int hueB, float dx, float dy) {
     float fMax = matrix[hueA][hueB];
-    float dist = std::sqrt(dx*dx+dy*dy);
+    float distSq = dx*dx+dy*dy;
     float rMid = (Config::rMin + Config::rMax)/2.f;
 
     float fMagnitude;
 
-    if (dist <= Config::rMin) {
-        fMagnitude = lerp(1.f,0.f,dist/Config::rMin);
+    if (distSq <= Config::rMin*Config::rMin) {
+        fMagnitude = lerp(1.f,0.f,std::sqrt(distSq)/Config::rMin);
     }
-    else if (dist <= rMid) {
-        fMagnitude = lerp(0.f,fMax,(dist-Config::rMin)/(rMid-Config::rMin));
+    else if (distSq <= rMid*rMid) {
+        fMagnitude = lerp(0.f,fMax,(std::sqrt(distSq)-Config::rMin)/(rMid-Config::rMin));
     }
-    else if (dist <= Config::rMax) {
-        fMagnitude = lerp(fMax,0.f,(dist-rMid)/(Config::rMax-rMid));
+    else if (distSq <= Config::rMax*Config::rMax) {
+        fMagnitude = lerp(fMax,0.f,(std::sqrt(distSq)-rMid)/(Config::rMax-rMid));
     }
     else fMagnitude = 0.f;
 
